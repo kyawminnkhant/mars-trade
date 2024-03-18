@@ -2,8 +2,14 @@
 
 namespace App\Actions\Fortify;
 
+use App\Helpers\UUIDGenerator;
 use App\Models\User;
+use App\Models\Wallet;
+use Exception;
+use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Jetstream\Jetstream;
@@ -26,10 +32,32 @@ class CreateNewUser implements CreatesNewUsers
             'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : '',
         ])->validate();
 
-        return User::create([
-            'name' => $input['name'],
-            'email' => $input['email'],
-            'password' => Hash::make($input['password']),
-        ]);
+        DB::beginTransaction();
+        $newUser = "";
+        try {
+            $newUser = User::create([
+                'name' => $input['name'],
+                'email' => $input['email'],
+                'password' => Hash::make($input['password']),
+            ]);
+
+            Wallet::firstOrCreate([
+                'user_id' => $newUser->id,
+                'address' => UUIDGenerator::accountNumberGenerate(),
+                'balance' => 0
+            ]);
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollBack();
+        }
+
+        return $newUser;
+
+
+        // User::create([
+        //     'name' => $input['name'],
+        //     'email' => $input['email'],
+        //     'password' => Hash::make($input['password']),
+        // ]);
     }
 }

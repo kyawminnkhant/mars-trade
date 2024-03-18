@@ -6,6 +6,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/trading', function () {
+    return view('frontend.trading.index');
+});
+
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
